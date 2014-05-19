@@ -27,7 +27,7 @@ TaskTracker.prototype = {
     this._createMenuButton();
 		this._createDropDown();
 	},
-	
+
   _createMenuButton: function() {
 		PanelMenu.Button.prototype._init.call(this, St.Align.START);
 		this.buttonText = new St.Label({text:_("(+)")});
@@ -35,14 +35,14 @@ TaskTracker.prototype = {
 		this.actor.add_actor(this.buttonText);
 		this.buttonText.get_parent().add_style_class_name("panelButtonWidth");
   },
-			
+
   // _destroyDropDown: function() {
   //   if (this.mainBox)
   //     this.mainBox.destroy();
   // },
 
 	_createDropDown: function()
-	{    		
+	{
 		let taskMenu  = this.menu;
 		let buttonText = this.buttonText;
 
@@ -51,7 +51,7 @@ TaskTracker.prototype = {
     //
     this.mainBox = new St.BoxLayout();
     this.mainBox.set_vertical(true);
-    
+
     // Create task box
     //
     this.taskBox = new St.BoxLayout();
@@ -62,15 +62,15 @@ TaskTracker.prototype = {
 		this.scrollView = new St.ScrollView({style_class: 'vfade',
                                           hscrollbar_policy: Gtk.PolicyType.NEVER,
                                           vscrollbar_policy: Gtk.PolicyType.AUTOMATIC});
-		
+
 		// Separator
     //
 		this.Separator = new PopupMenu.PopupSeparatorMenuItem();
-		
+
 		// Bottom section
     //
 		this.bottomSection = new PopupMenu.PopupMenuSection();
-		
+
     // New task entry box
     //
 		this.newTask = new St.Entry(
@@ -87,14 +87,14 @@ TaskTracker.prototype = {
 			let symbol = e.get_key_symbol();
 			if (symbol == KEY_RETURN || symbol == KEY_ENTER) {
 				buttonText.set_text(_("(1)"));
-				let item = new PopupMenu.PopupMenuItem(_("Hello world"));
+				let item = new PopupMenu.PopupMenuItem(_(o.get_text()));
         // should be task box
         taskMenu.addMenuItem(item);
 		    entryNewTask.set_text('');
 				taskMenu.close();
 			}
 		});
-		
+
 		this.scrollView.add_actor(this.taskBox);
 		this.bottomSection.actor.add_actor(this.newTask);
 		this.bottomSection.actor.add_style_class_name("newTaskSection");
@@ -103,7 +103,7 @@ TaskTracker.prototype = {
 		this.mainBox.add_actor(this.bottomSection.actor);
 		taskMenu.box.add(this.mainBox);
 	},
-	
+
 	_enable: function() {},
 
 	_disable: function() {}
