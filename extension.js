@@ -3,6 +3,8 @@
 const St = imports.gi.St;
 const Gtk = imports.gi.Gtk;
 const Main = imports.ui.main;
+const Lang = imports.lang;
+const Clutter = imports.gi.Clutter;
 const Tweener = imports.ui.tweener;
 const PanelMenu = imports.ui.panelMenu;
 const PopupMenu = imports.ui.popupMenu;
@@ -22,8 +24,9 @@ TaskTracker.prototype = {
   __proto__: PanelMenu.Button.prototype,
   _init: function() {
     this.buttonText = null;
+    this.taskMenu = null;
     this.mainBox    = null;
-    this.taskArr    = [];
+    this.taskMonitor = new this._taskMonitor();
 
     this._createMenuButton();
     this._createDropDown();
@@ -42,8 +45,7 @@ TaskTracker.prototype = {
       this.mainBox.destroy();
   },
 
-  _createDropDown: function()
-  {
+  _createDropDown: function() {
     let taskMenu  = this.menu;
     let buttonText = this.buttonText;
     let taskArr = this.taskArr;
@@ -83,22 +85,22 @@ TaskTracker.prototype = {
     });
 
     let entryNewTask = this.newTask.clutter_text;
+    let taskMonitor = this.taskMonitor;
+    let taskBox = this.taskBox;
     entryNewTask.set_max_length(MAX_LENGTH);
     entryNewTask.connect('key-press-event', function(o,e)	{
       let symbol = e.get_key_symbol();
       if (symbol == KEY_RETURN || symbol == KEY_ENTER) {
         let item = new PopupMenu.PopupMenuItem(_(o.get_text()));
-        taskArr.push(item) // we are monitoring changes in the tasks array, this will cause a redraw
-                           // of the task box
-        buttonText.set_text(_("("+taskArr.length+")"));
-        // item.connect('activate', Lang.bind(this,function(){
-        //   // remove task from task array
-        // }));
-
-        // should be task box
-        //this.taskBox.add(item.actor)
-        taskMenu.addMenuItem(item);
+        taskMonitor.push(item) // we are monitoring changes in the tasks array, this will cause a redraw
+                               // of the task box
+        buttonText.set_text(_("("+taskMonitor.numberOfTasks()+")"));
         entryNewTask.set_text('');
+        taskMenu.addMenuItem(item);
+				item.connect('activate', Lang.bind(this,function(){
+          log("Removing item");
+				}));
+        taskBox.add(item.actor)
         taskMenu.close();
       }
     });
@@ -114,7 +116,29 @@ TaskTracker.prototype = {
 
   _enable: function() {},
 
-  _disable: function() {}
+  _disable: function() {},
+
+  _taskMonitor: function() {
+    this._tasks = [];
+
+    this.push = function(task) {
+      // item.connect('activate', Lang.bind(this,function(){
+      //   // remove task from task array
+      // }));
+
+      // should be task box
+      //this.taskBox.add(item.actor)
+      this._tasks.push(task);
+    };
+
+    this.pop = function(task) {
+      // pop!
+    };
+
+    this.numberOfTasks = function() {
+      return this._tasks.length;
+    }
+  }
 }
 
 function enable() {
