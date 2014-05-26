@@ -26,6 +26,7 @@ TaskTracker.prototype = {
   _init: function() {
     this.buttonText = null;
     this.taskMenu   = null;
+    this.taskBox    = null;
     this.mainBox    = null;
     this.tasks      = [];
 
@@ -86,19 +87,15 @@ TaskTracker.prototype = {
     });
 
     let entryNewTask = this.newTask.clutter_text;
-    let taskBox = this.taskBox;
-    let addTask = this._addTask.bind(this);
     let taskMenu = this.taskMenu;
-    let createTask = this._createTask;
+    let createTask = this._createTask.bind(this);
 
     entryNewTask.set_max_length(MAX_LENGTH);
     entryNewTask.connect('key-press-event', function(o,e)	{
       let symbol = e.get_key_symbol();
       if (symbol == KEY_RETURN || symbol == KEY_ENTER) {
         let task = createTask(o);
-        addTask(task);
         entryNewTask.set_text('');
-        taskBox.add(task.actor)
         taskMenu.close();
       }
     });
@@ -113,23 +110,27 @@ TaskTracker.prototype = {
   },
 
   _createTask: function(o) {
+    var that = this;
     let task = new PopupMenu.PopupMenuItem(_(o.get_text()));
 		task.connect('activate', Lang.bind(this,function(){
       log("Removing item");
+      that._removeTask(this);
 		}));
+    this._addTask(task);
 
     return task;
   },
   
   _addTask: function(task) {
     this.tasks.push(task);
-    this.taskMenu.addMenuItem(task);
+    this.taskBox.add_actor(task.actor);
     this.buttonText.set_text(_("("+this.tasks.length+")"));
   },
 
   _removeTask: function(task) {
-    let location = this.tasks(task);
-    this.taskMenu.removeMenuItem(task);
+    let location = this.tasks.indexOf(task);
+    this.tasks.splice(location, 1);
+    this.taskBox.remove_actor(task.actor);
     this.buttonText.set_text(_("("+this.tasks.length+")"));
   }
 }
