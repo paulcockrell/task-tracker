@@ -28,6 +28,9 @@ const APPLICATION_ICON_SIZE = 32;
 const HORIZ_FACTOR = 5;
 const MENU_HEIGHT_OFFSET = 132;
 const NAVIGATION_REGION_OVERSHOOT = 50;
+const MAX_LENGTH = 100;
+const KEY_RETURN = 65293;
+const KEY_ENTER = 65421;
 
 const Task = new Lang.Class({
   Name: 'Task',
@@ -48,6 +51,39 @@ const Task = new Lang.Class({
   }
 });
 
+const TasksManager = new Lang.Class({
+  Name: 'TasksManager',
+  BASE_TASKS: "Do something\nDo something else\nDo more stuff\nDo that again\n",
+
+  _init: function() {
+    this.tasks = [];
+	  this.filePath = GLib.get_home_dir() + "/.list.tasks";
+	  let locales = metadata.path + "/locale";
+	  Gettext.bindtextdomain('todolist', locales);
+  },
+
+  _checkTasksFileExists: function() {
+		return (!GLib.file_test(filePath, GLib.FileTest.EXISTS))
+  },
+
+  _createTasksFile: function() {
+    if(!_checkTasksFileExists)
+	    GLib.file_set_contents(this.filePath, BASE_TASKS);
+  },
+
+  _destroyTasksFile: function() {
+    if(_checkTasksFileExists)
+
+  },
+  
+  addTask: function(taskName) {
+  },
+  
+  removeTask: function(taskName) {
+  }
+
+});
+
 const TasksMenuItem = new Lang.Class({
   Name: 'TasksMenuItem',
   Extends: PopupMenu.PopupBaseMenuItem,
@@ -55,6 +91,7 @@ const TasksMenuItem = new Lang.Class({
   _init: function(button) {
     this.parent();
     this._button = button;
+
     // New task entry box
     //
     this.newTask = new St.Entry({
@@ -69,7 +106,19 @@ const TasksMenuItem = new Lang.Class({
   // This should call the add new task function
   //
   activate: function(event) {
-    log("Adding task");
+    let that = this;
+    let entryNewTask = this.newTask.clutter_text;
+    entryNewTask.set_max_length(MAX_LENGTH);
+    entryNewTask.connect('key-press-event', function(o,e)	{
+      log("pressed a key,",o);
+      let symbol = e.get_key_symbol();
+      if (symbol == KEY_RETURN || symbol == KEY_ENTER) {
+        let task = new Task(o);
+        // that.tasks << task;
+        // log("we now have "+that.tasks.length+" tasks");
+        entryNewTask.set_text('');
+      }
+    });
   }
 });
 
@@ -233,23 +282,6 @@ const CategoryMenuItem = new Lang.Class({
     }
 });
 
-//const HotCorner = new Lang.Class({
-//    Name: 'HotCorner',
-//    Extends: Layout.HotCorner,
-//
-//    _onCornerEntered : function() {
-//        if (!this._entered) {
-//            this._entered = true;
-//            if (!Main.overview.animationInProgress) {
-//                this._activationTime = Date.now() / 1000;
-//                this.rippleAnimation();
-//                Main.overview.toggle();
-//            }
-//        }
-//        return false;
-//    }
-//});
-
 const TasksMenu = new Lang.Class({
   Name: 'TasksMenu',
   Extends: PopupMenu.PopupMenu,
@@ -287,12 +319,14 @@ const TasksMenu = new Lang.Class({
 const TasksButton = new Lang.Class({
     Name: 'TasksButton',
     Extends: PanelMenu.Button,
+    taskMenu: null,
 
     _init: function() {
         this.parent(1.0, null, false);
 
         // this.actor.add_actor(this.buttonText);
-        this.setMenu(new TasksMenu(this.actor, 1.0, St.Side.TOP, this));
+        this.tasksMenu = new TasksMenu(this.actor, 1.0, St.Side.TOP, this)
+        this.setMenu(this.tasksMenu);
         Main.panel.menuManager.addMenu(this.menu);
 
         // At this moment applications menu is not keyboard navigable at
@@ -585,6 +619,7 @@ let _hidingId;
 let _installedChangedId;
 let _panelBoxChangedId;
 let _showingId;
+let _tasks;
 
 function enable() {
   tasksButton = Main.panel.statusArea['activities'];
