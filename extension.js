@@ -57,29 +57,33 @@ const TasksManager = new Lang.Class({
 
   _init: function() {
     this.tasks = [];
-	  this.filePath = GLib.get_home_dir() + "/.list.tasks";
-	  let locales = metadata.path + "/locale";
-	  Gettext.bindtextdomain('todolist', locales);
+    this.filePath = GLib.get_home_dir() + "/.list.tasks";
+    let locales = metadata.path + "/locale";
+    Gettext.bindtextdomain('todolist', locales);
   },
 
   _checkTasksFileExists: function() {
-		return (!GLib.file_test(filePath, GLib.FileTest.EXISTS))
+    return (!GLib.file_test(filePath, GLib.FileTest.EXISTS));
   },
 
   _createTasksFile: function() {
-    if(!_checkTasksFileExists)
-	    GLib.file_set_contents(this.filePath, BASE_TASKS);
+    if(!_checkTasksFileExists) {
+      GLib.file_set_contents(this.filePath, BASE_TASKS);
+    }
   },
 
   _destroyTasksFile: function() {
-    if(_checkTasksFileExists)
-
+    if(_checkTasksFileExists) {
+      return true; // to do
+    }
   },
   
   addTask: function(taskName) {
+    return true; // to do
   },
   
   removeTask: function(taskName) {
+    return true; // to do
   }
 
 });

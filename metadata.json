@@ -1,10 +1,10 @@
 {
-"extension-id": "taks-time-tracker",
-"uuid": "task-time-tracker@paulcockrell.github.com",
-"gettext-domain": "gnome-shell-extensions",
-"name": "Task Time Tracker",
-"description": "A utility to track time on tasks you are working on",
-"original-authors": [ "paulcockrell@gmail.com" ],
-"shell-version": [ "3.10" ],
-"url": "http://git.gnome.org/gnome-shell-extensions"
+    "extension-id": "task-tracker",
+    "uuid": "task-tracker@paulcockrell.gmail.com",
+    "gettext-domain": "gnome-shell-extensions",
+    "name": "Task Tracker",
+    "description": "A utility to track time on tasks you are working on",
+    "original-authors": [ "paulcockrell@gmail.com" ],
+    "shell-version": [ "3.10.4" ],
+    "url": "http://git.gnome.org/gnome-shell-extensions"
 }
