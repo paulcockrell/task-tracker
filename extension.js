@@ -24,6 +24,8 @@ const Convenience = Me.imports.convenience;
 
 const appSys = Shell.AppSystem.get_default();
 
+const Util = imports.misc.util;
+
 const APPLICATION_ICON_SIZE = 32;
 const HORIZ_FACTOR = 5;
 const MENU_HEIGHT_OFFSET = 132;
@@ -36,7 +38,6 @@ const Task = new Lang.Class({
   Name: 'Task',
 
   _init: function(data) {
-    log("Creating new task with data", data);
     this._name = data.Defect.Name;
     this._objectID = data.Defect.ObjectID;
     this._rallyURL = data.Defect._ref;
@@ -104,13 +105,10 @@ const TasksMenuItem = new Lang.Class({
     let entryNewTask = this.newTask.clutter_text;
     entryNewTask.set_max_length(MAX_LENGTH);
     entryNewTask.connect('key-press-event', function(o,e)	{
-      log("pressed a key,",o);
       let symbol = e.get_key_symbol();
       if (symbol == KEY_RETURN || symbol == KEY_ENTER) {
         let task = new Task(o);
-	// the following two lines were commented out
         that.tasks << task;
-        log("we now have "+that.tasks.length+" tasks");
         entryNewTask.set_text('');
       }
     });
@@ -144,7 +142,11 @@ const TaskMenuItem = new Lang.Class({
   },
 
   activate: function(event) {
-	  this._task.open_new_window(event.get_time());
+	  // XXX Im just opening firefox here, assuming all clicks open a browser, this 
+	  // needs to be more intelligentio
+	  //
+	  log("blah", event);
+	  Util.spawn(['/usr/bin/firefox']);
           this._button.selectCategory(null, null);
           this._button.menu.toggle();
 	  this.parent(event);
@@ -162,6 +164,7 @@ const TaskMenuItem = new Lang.Class({
   },
 
   _updateIcon: function() {
+    //XXX We cannot have icons as I am simply passing in a string rather than a class at this point
     //this._iconBin.set_child(this._task.create_icon_texture(APPLICATION_ICON_SIZE));
   }
 });
@@ -510,7 +513,6 @@ const TasksButton = new Lang.Class({
         while ((nextTask = rallyTasks.shift()) !== undefined) {
           let task = new Task(nextTask);
 	  this.applicationsByCategory[task.get_object_id()] = task;
-log("flipy flopy", this.applicationsByCategory[task.get_object_id()]);
           let categoryMenuItem = new CategoryMenuItem(this, task);
           this.categoriesBox.add_actor(categoryMenuItem.actor);
         }
@@ -531,12 +533,10 @@ log("flipy flopy", this.applicationsByCategory[task.get_object_id()]);
     },
 
     selectCategory: function(categoryMenuItem) {
-        // if (categoryMenuItem)
-        //    this._clearApplicationsBox(categoryMenuItem.actor);
-        // else
-        //     this._clearApplicationsBox(null);
-
-        this._displayButtons(this._listApplications(categoryMenuItem.get_object_id()));
+	if (categoryMenuItem)
+            this._displayButtons(this._listApplications(categoryMenuItem.get_object_id()));
+	else
+	    this._clearApplicationsBox(null);
     },
 
     _displayButtons: function(tasks) {
@@ -544,26 +544,21 @@ log("flipy flopy", this.applicationsByCategory[task.get_object_id()]);
             for (let i = 0; i < tasks.length; i++) {
                let task = tasks[i];
                if (!this._applicationsButtons[task]) {
-log("mutha fucker enit!");
                   let taskMenuItem = new TaskMenuItem(this, task);
                   this._applicationsButtons[task] = taskMenuItem;
                }
                if (!this._applicationsButtons[task].actor.get_parent())
-log("mutha fucker enit! 2");
                   this.tasksBox.add_actor(this._applicationsButtons[task].actor);
             }
          }
     },
 
     _listApplications: function(task_id) {
-log("task id", task_id);
 	if (task_id) {
-log("apps by cat", task_id, this.applicationsByCategory[task_id]);
-         return this.applicationsByCategory[task_id].get_details();
-} else {
-log("oops no things here!");
-return [];
-}
+            return this.applicationsByCategory[task_id].get_details();
+	} else {
+	    return [];
+        }
     },
 
     destroy: function() {
