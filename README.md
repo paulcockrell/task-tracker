@@ -42,7 +42,7 @@ ln -s /path/to/dev/folder/task-tracker ~/.local/share/gnome-shell/extensions/tas
 This is so it becomes enlightened to our extension (this is required as it is not being installed in the traditional way)
 
 ```sh
-Alt + _f2_ # command runner
+Alt + f2   # command runner
 r          # restart gnome
 ```
 
