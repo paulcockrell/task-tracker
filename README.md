@@ -80,7 +80,7 @@ journalctl /usr/bin/gnome-session -f -o cat
 3. click enable/dissable
 4. If you don't see the extension, it may mean you've just created it, so we
 must restart gnome, see Reloading Gnome
-```sh
+```
 
 ### Reloading Gnome
 
