@@ -35,13 +35,40 @@ const KEY_ENTER = 65421;
 const Task = new Lang.Class({
   Name: 'Task',
 
-  _init: function(name) {
-    this.name = name;
-    this.icon = null;
+  _init: function(data) {
+    log("Creating new task with data", data);
+    this._name = data.Defect.Name;
+    this._objectID = data.Defect.ObjectID;
+    this._rallyURL = data.Defect._ref;
+    this._icon = null;
   },
 
   get_name: function() {
-    return this.name;
+    return this._name;
+  },
+
+  get_object_id: function() {
+    return this._objectID;
+  },
+
+  get_rally_url: function() {
+    return this._rallyURL;
+  },
+
+  get_git_repo_url: function() {
+    return "some git repo url";
+  },
+
+  get_user_story: function() {
+    return "These are the details of the task... lovely jubbly";
+  },
+
+  get_details: function () {
+    return [this.get_rally_url(), this.get_git_repo_url(), this.get_user_story()];
+  },
+
+  icon: function() {
+    return this._icon;
   },
 
   create_icon_texture: function() {
@@ -49,43 +76,6 @@ const Task = new Lang.Class({
                               style_class: 'system-status-icon' });
     return this.icon;
   }
-});
-
-const TasksManager = new Lang.Class({
-  Name: 'TasksManager',
-  BASE_TASKS: "Do something\nDo something else\nDo more stuff\nDo that again\n",
-
-  _init: function() {
-    this.tasks = [];
-    this.filePath = GLib.get_home_dir() + "/.list.tasks";
-    let locales = metadata.path + "/locale";
-    Gettext.bindtextdomain('todolist', locales);
-  },
-
-  _checkTasksFileExists: function() {
-    return (!GLib.file_test(filePath, GLib.FileTest.EXISTS));
-  },
-
-  _createTasksFile: function() {
-    if(!_checkTasksFileExists) {
-      GLib.file_set_contents(this.filePath, BASE_TASKS);
-    }
-  },
-
-  _destroyTasksFile: function() {
-    if(_checkTasksFileExists) {
-      return true; // to do
-    }
-  },
-  
-  addTask: function(taskName) {
-    return true; // to do
-  },
-  
-  removeTask: function(taskName) {
-    return true; // to do
-  }
-
 });
 
 const TasksMenuItem = new Lang.Class({
@@ -118,8 +108,9 @@ const TasksMenuItem = new Lang.Class({
       let symbol = e.get_key_symbol();
       if (symbol == KEY_RETURN || symbol == KEY_ENTER) {
         let task = new Task(o);
-        // that.tasks << task;
-        // log("we now have "+that.tasks.length+" tasks");
+	// the following two lines were commented out
+        that.tasks << task;
+        log("we now have "+that.tasks.length+" tasks");
         entryNewTask.set_text('');
       }
     });
@@ -138,7 +129,7 @@ const TaskMenuItem = new Lang.Class({
     this._iconBin = new St.Bin();
     this.actor.add_child(this._iconBin);
 
-    let taskLabel = new St.Label({ text: task.get_name() });
+    let taskLabel = new St.Label({ text: task });
     this.actor.add_child(taskLabel, { expand: true });
     this.actor.label_actor = taskLabel;
 
@@ -154,14 +145,15 @@ const TaskMenuItem = new Lang.Class({
 
   activate: function(event) {
 	  this._task.open_new_window(event.get_time());
-    this._button.selectCategory(null, null);
-    this._button.menu.toggle();
+          this._button.selectCategory(null, null);
+          this._button.menu.toggle();
 	  this.parent(event);
   },
 
   setActive: function(active, params) {
     if (active)
       this._button.scrollToButton(this);
+
     this.parent(active, params);
   },
 
@@ -170,7 +162,7 @@ const TaskMenuItem = new Lang.Class({
   },
 
   _updateIcon: function() {
-    this._iconBin.set_child(this._task.create_icon_texture(APPLICATION_ICON_SIZE));
+    //this._iconBin.set_child(this._task.create_icon_texture(APPLICATION_ICON_SIZE));
   }
 });
 
@@ -333,9 +325,6 @@ const TasksButton = new Lang.Class({
         this.setMenu(this.tasksMenu);
         Main.panel.menuManager.addMenu(this.menu);
 
-        // At this moment applications menu is not keyboard navigable at
-        // all (so not accessible), so it doesn't make sense to set as
-        // role ATK_ROLE_MENU like other elements of the panel.
         this.actor.accessible_role = Atk.Role.LABEL;
 
         let hbox = new St.BoxLayout({ style_class: 'panel-status-menu-box' });
@@ -373,18 +362,7 @@ const TasksButton = new Lang.Class({
                 this.reloadFlag = true;
             }
         }));
-
-        // Since the hot corner uses stage coordinates, Clutter won't
-        // queue relayouts for us when the panel moves. Queue a relayout
-        // when that happens.
-        _panelBoxChangedId = Main.layoutManager.connect('panel-box-changed', Lang.bind(this, function() {
-            container.queue_relayout();
-        }));
     },
-
-    //get hotCorner() {
-    //    return Main.layoutManager.hotCorners[Main.layoutManager.primaryIndex];
-    //},
 
     _createVertSeparator: function() {
         let separator = new St.DrawingArea({ style_class: 'calendar-vertical-separator',
@@ -442,25 +420,6 @@ const TasksButton = new Lang.Class({
         this.tasksBox.destroy_all_children();
         this.categoriesBox.destroy_all_children();
         this._display();
-    },
-
-    _loadCategory: function(categoryId, dir) {
-        let iter = dir.iter();
-        let nextType;
-        while ((nextType = iter.next()) != GMenu.TreeItemType.INVALID) {
-            if (nextType == GMenu.TreeItemType.ENTRY) {
-                let entry = iter.get_entry();
-                if (!entry.get_app_info().get_nodisplay()) {
-                    let app = appSys.lookup_app_by_tree_entry(entry);
-                    let menu_id = dir.get_menu_id();
-                    this.applicationsByCategory[categoryId].push(app);
-                }
-            } else if (nextType == GMenu.TreeItemType.DIRECTORY) {
-                let subdir = iter.get_directory();
-                if (!subdir.get_is_nodisplay())
-                    this._loadCategory(categoryId, subdir);
-            }
-        }
     },
 
     scrollToButton: function(button) {
@@ -545,31 +504,19 @@ const TasksButton = new Lang.Class({
         this.mainBox.style=('width: 640px;');
         this.mainBox.hide();
 
-        //Load categories
+        // Load Rally tasks
         this.applicationsByCategory = {};
-        let tree = appSys.get_tree();
-        let root = tree.get_root_directory();
-        let categoryMenuItem = new CategoryMenuItem(this, null);
-        this.categoriesBox.add_actor(categoryMenuItem.actor);
-        let iter = root.iter();
-        let nextType;
-        while ((nextType = iter.next()) != GMenu.TreeItemType.INVALID) {
-            if (nextType == GMenu.TreeItemType.DIRECTORY) {
-                let dir = iter.get_directory();
-                if (!dir.get_is_nodisplay()) {
-                    let categoryId = dir.get_menu_id();
-                    this.applicationsByCategory[categoryId] = [];
-                    this._loadCategory(categoryId, dir);
-                    if (this.applicationsByCategory[categoryId].length > 0) {
-                        let categoryMenuItem = new CategoryMenuItem(this, dir);
-                        this.categoriesBox.add_actor(categoryMenuItem.actor);
-                    }
-                }
-            }
+        let nextTask;
+        while ((nextTask = rallyTasks.shift()) !== undefined) {
+          let task = new Task(nextTask);
+	  this.applicationsByCategory[task.get_object_id()] = task;
+log("flipy flopy", this.applicationsByCategory[task.get_object_id()]);
+          let categoryMenuItem = new CategoryMenuItem(this, task);
+          this.categoriesBox.add_actor(categoryMenuItem.actor);
         }
 
         //Load applications
-        this._displayButtons(this._listTasks());
+        this._displayButtons(this._listApplications(null));
 
         let height = this.categoriesBox.height + MENU_HEIGHT_OFFSET + 'px';
         this.mainBox.style+=('height: ' + height);
@@ -583,13 +530,13 @@ const TasksButton = new Lang.Class({
         }
     },
 
-    selectCategory: function(dir, categoryMenuItem) {
-        if (categoryMenuItem)
-            this._clearApplicationsBox(categoryMenuItem.actor);
-        else
-            this._clearApplicationsBox(null);
+    selectCategory: function(categoryMenuItem) {
+        // if (categoryMenuItem)
+        //    this._clearApplicationsBox(categoryMenuItem.actor);
+        // else
+        //     this._clearApplicationsBox(null);
 
-        this._displayButtons(this._listTasks());
+        this._displayButtons(this._listApplications(categoryMenuItem.get_object_id()));
     },
 
     _displayButtons: function(tasks) {
@@ -597,33 +544,80 @@ const TasksButton = new Lang.Class({
             for (let i = 0; i < tasks.length; i++) {
                let task = tasks[i];
                if (!this._applicationsButtons[task]) {
+log("mutha fucker enit!");
                   let taskMenuItem = new TaskMenuItem(this, task);
                   this._applicationsButtons[task] = taskMenuItem;
                }
                if (!this._applicationsButtons[task].actor.get_parent())
+log("mutha fucker enit! 2");
                   this.tasksBox.add_actor(this._applicationsButtons[task].actor);
             }
          }
     },
 
-  _listTasks: function() {
-    let task = new Task("a task");
-    return [task];
-  },
+    _listApplications: function(task_id) {
+log("task id", task_id);
+	if (task_id) {
+log("apps by cat", task_id, this.applicationsByCategory[task_id]);
+         return this.applicationsByCategory[task_id].get_details();
+} else {
+log("oops no things here!");
+return [];
+}
+    },
 
-  destroy: function() {
-    this.menu.actor.get_children().forEach(function(c) { c.destroy() });
-    this.parent();
-  }
+    destroy: function() {
+      this.menu.actor.get_children().forEach(function(c) { c.destroy() });
+      this.parent();
+    }
 });
 
 let tasksMenuButton;
 let tasksButton;
 let _hidingId;
 let _installedChangedId;
-let _panelBoxChangedId;
 let _showingId;
 let _tasks;
+let rallyTasks = [
+  { "Defect":
+    {
+      "_rallyAPIMajor": "2",
+      "_rallyAPIMinor": "0",
+      "_ref": "https://rally1.rallydev.com/slm/webservice/v2.0/defect/54472",
+      "_refObjectName": "This is the defect name",
+      "_type": "Defect",
+      "CreationDate": "2007-08-02T13:55:48.757Z",
+      "ObjectID": 54472,
+      "Name": "This is the defect name",
+      "FormattedID": "D57",
+      "LastUpdateDate": "2007-08-02T13:55:48.757Z",
+      "Project": {
+        "_rallyAPIMajor": "2",
+        "_rallyAPIMinor": "0",
+        "_ref": "https://rally1.rallydev.com/slm/webservice/v2.0/project/28030",
+        "_refObjectName": "Project 1",
+        "_type": "Project"
+      },
+      "SubmittedBy": "paul.cockrell@evogi.com",
+      "Duplicates": [
+        {
+          "_rallyAPIMajor": "2",
+          "_rallyAPIMinor": "0",
+          "_ref": "https://rally1.rallydev.com/slm/webservice/v2.0/defect/31275",
+          "_refObjectName": "Duplicate 1",
+          "_type": "Defect"
+        },
+        {
+          "_rallyAPIMajor": "2",
+          "_rallyAPIMinor": "0",
+          "_ref": "https://rally1.rallydev.com/slm/webservice/v2.0/project/27872",
+          "_refObjectName": "Duplicate 2",
+          "_type": "Defect"
+        },
+      ]
+    }
+  }
+];
 
 function enable() {
   tasksButton = Main.panel.statusArea['activities'];
@@ -642,7 +636,6 @@ function enable() {
 function disable() {
   Main.panel.menuManager.removeMenu(tasksMenuButton.menu);
   appSys.disconnect(_installedChangedId);
-  Main.layoutManager.disconnect(_panelBoxChangedId);
   Main.overview.disconnect(_hidingId);
   Main.overview.disconnect(_showingId);
   tasksMenuButton.destroy();

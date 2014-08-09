@@ -102,3 +102,10 @@ must restart gnome, see Reloading Gnome
 ```sh
 journalctl -f /usr/bin/gnome-<shell|session>
 ```
+
+### Log to logs
+
+```sh
+log("some lovely message");
+```
+
