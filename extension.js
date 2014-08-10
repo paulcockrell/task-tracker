@@ -34,6 +34,23 @@ const MAX_LENGTH = 100;
 const KEY_RETURN = 65293;
 const KEY_ENTER = 65421;
 
+const Application = new Lang.Class({
+  Name: 'Application',
+
+  _init: function(name, execute) {
+    this._name = name;
+    this._execute = execute;
+  },
+
+  get_name: function() {
+    return this._name;
+  },
+
+  execute: function() {
+    return this._execute();
+  }
+});
+
 const Task = new Lang.Class({
   Name: 'Task',
 
@@ -41,6 +58,7 @@ const Task = new Lang.Class({
     this._name = data.Defect.Name;
     this._objectID = data.Defect.ObjectID;
     this._rallyURL = data.Defect._ref;
+    this._gitURL = null;
     this._icon = null;
   },
 
@@ -52,12 +70,16 @@ const Task = new Lang.Class({
     return this._objectID;
   },
 
+  get_rally_title: function() {
+    return "Open task in Rally";
+  },
+
   get_rally_url: function() {
     return this._rallyURL;
   },
 
   get_git_repo_url: function() {
-    return "some git repo url";
+    return this._gitURL + "some git repo url";
   },
 
   get_user_story: function() {
@@ -66,6 +88,13 @@ const Task = new Lang.Class({
 
   get_details: function () {
     return [this.get_rally_url(), this.get_git_repo_url(), this.get_user_story()];
+  },
+
+  get_applications: function() {
+    let rally_exe = new Application(this.get_rally_title(), function() { Util.spawn(['/usr/bin/firefox', this.get_rally_url()]); }.bind(this));
+    let git_exe = new Application(this.get_name(), function() { Util.spawn(['/usr/bin/firefox', this.get_get_repo_url()]); });
+
+    return [rally_exe, git_exe];
   },
 
   icon: function() {
@@ -79,8 +108,8 @@ const Task = new Lang.Class({
   }
 });
 
-const TasksMenuItem = new Lang.Class({
-  Name: 'TasksMenuItem',
+const ApplicationsMenuItem = new Lang.Class({
+  Name: 'ApplicationsMenuItem',
   Extends: PopupMenu.PopupBaseMenuItem,
 
   _init: function(button) {
@@ -115,19 +144,20 @@ const TasksMenuItem = new Lang.Class({
   }
 });
 
-const TaskMenuItem = new Lang.Class({
-  Name: 'TaskMenuItem',
+const ApplicationMenuItem = new Lang.Class({
+  Name: 'ApplicationMenuItem',
   Extends: PopupMenu.PopupBaseMenuItem,
 
   _init: function(button, task) {
     this.parent();
     this._task = task;
+    log("XXX", this._task);
     this._button = button;
 
     this._iconBin = new St.Bin();
     this.actor.add_child(this._iconBin);
 
-    let taskLabel = new St.Label({ text: task });
+    let taskLabel = new St.Label({ text: this._task.get_name() });
     this.actor.add_child(taskLabel, { expand: true });
     this.actor.label_actor = taskLabel;
 
@@ -145,8 +175,7 @@ const TaskMenuItem = new Lang.Class({
 	  // XXX Im just opening firefox here, assuming all clicks open a browser, this 
 	  // needs to be more intelligentio
 	  //
-	  log("blah", event);
-	  Util.spawn(['/usr/bin/firefox']);
+          this._task.execute()
           this._button.selectCategory(null, null);
           this._button.menu.toggle();
 	  this.parent(event);
@@ -315,8 +344,8 @@ const TasksMenu = new Lang.Class({
   }
 });
 
-const TasksButton = new Lang.Class({
-    Name: 'TasksButton',
+const ApplicationsButton = new Lang.Class({
+    Name: 'ApplicationsButton',
     Extends: PanelMenu.Button,
     taskMenu: null,
 
@@ -420,7 +449,7 @@ const TasksButton = new Lang.Class({
     },
 
     _redisplay: function() {
-        this.tasksBox.destroy_all_children();
+        this.applicationsBox.destroy_all_children();
         this.categoriesBox.destroy_all_children();
         this._display();
     },
@@ -486,13 +515,13 @@ const TasksButton = new Lang.Class({
                                                      x_fill: true, y_fill: true,
                                                      y_align: St.Align.START });
 
-        let activities = new TasksMenuItem(this);
+        let activities = new ApplicationsMenuItem(this);
         this.leftBox.add(activities.actor, { expand: false,
                                              x_fill: true, y_fill: false,
                                              y_align: St.Align.START });
 
-        this.tasksBox = new St.BoxLayout({ vertical: true });
-        this.applicationsScrollBox.add_actor(this.tasksBox);
+        this.applicationsBox = new St.BoxLayout({ vertical: true });
+        this.applicationsScrollBox.add_actor(this.applicationsBox);
         this.categoriesBox = new St.BoxLayout({ vertical: true });
         this.categoriesScrollBox.add_actor(this.categoriesBox, { expand: true, x_fill: false });
 
@@ -512,7 +541,7 @@ const TasksButton = new Lang.Class({
         let nextTask;
         while ((nextTask = rallyTasks.shift()) !== undefined) {
           let task = new Task(nextTask);
-	  this.applicationsByCategory[task.get_object_id()] = task;
+	  this.applicationsByCategory[task.get_object_id()] = task.get_applications();
           let categoryMenuItem = new CategoryMenuItem(this, task);
           this.categoriesBox.add_actor(categoryMenuItem.actor);
         }
@@ -525,10 +554,10 @@ const TasksButton = new Lang.Class({
     },
 
     _clearApplicationsBox: function(selectedActor) {
-        let actors = this.tasksBox.get_children();
+        let actors = this.applicationsBox.get_children();
         for (let i = 0; i < actors.length; i++) {
             let actor = actors[i];
-            this.tasksBox.remove_actor(actor);
+            this.applicationsBox.remove_actor(actor);
         }
     },
 
@@ -539,23 +568,24 @@ const TasksButton = new Lang.Class({
 	    this._clearApplicationsBox(null);
     },
 
-    _displayButtons: function(tasks) {
-         if (tasks) {
-            for (let i = 0; i < tasks.length; i++) {
-               let task = tasks[i];
-               if (!this._applicationsButtons[task]) {
-                  let taskMenuItem = new TaskMenuItem(this, task);
-                  this._applicationsButtons[task] = taskMenuItem;
-               }
-               if (!this._applicationsButtons[task].actor.get_parent())
-                  this.tasksBox.add_actor(this._applicationsButtons[task].actor);
-            }
-         }
+    _displayButtons: function(apps) {
+      if (apps) {
+        for (let i = 0; i < apps.length; i++) {
+          let app = apps[i];
+          if (!this._applicationsButtons[app]) {
+            let applicationMenuItem = new ApplicationMenuItem(this, app);
+            this._applicationsButtons[app] = applicationMenuItem;
+          }
+          if (!this._applicationsButtons[app].actor.get_parent())
+            this.applicationsBox.add_actor(this._applicationsButtons[app].actor);
+        }
+      }
     },
+
 
     _listApplications: function(task_id) {
 	if (task_id) {
-            return this.applicationsByCategory[task_id].get_details();
+            return this.applicationsByCategory[task_id];
 	} else {
 	    return [];
         }
@@ -617,7 +647,7 @@ let rallyTasks = [
 function enable() {
   tasksButton = Main.panel.statusArea['activities'];
   tasksButton.container.hide();
-  tasksMenuButton = new TasksButton();
+  tasksMenuButton = new ApplicationsButton();
   Main.panel.addToStatusArea('task-time-tracker', tasksMenuButton, 1, 'right');
 
   Main.wm.setCustomKeybindingHandler('panel-main-menu',
