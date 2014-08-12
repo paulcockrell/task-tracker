@@ -1,4 +1,13 @@
-/* -*- mode: js2; js2-basic-offset: 4; indent-tabs-mode: nil -*- */
+
+
+/***
+ * Stole from the weather extension
+ * ***/
+
+const Config = imports.misc.config;
+const Gio = imports.gi.Gio;
+const Mainloop = imports.mainloop;
+const Soup = imports.gi.Soup;
 
 const Atk = imports.gi.Atk;
 const GMenu = imports.gi.GMenu;
@@ -151,7 +160,6 @@ const ApplicationMenuItem = new Lang.Class({
   _init: function(button, task) {
     this.parent();
     this._task = task;
-    log("XXX", this._task);
     this._button = button;
 
     this._iconBin = new St.Bin();
@@ -351,6 +359,7 @@ const ApplicationsButton = new Lang.Class({
 
     _init: function() {
         this.parent(1.0, null, false);
+        this._rallyManager = new RallyManager();
 
         // this.actor.add_actor(this.buttonText);
         this.tasksMenu = new TasksMenu(this.actor, 1.0, St.Side.TOP, this)
@@ -584,17 +593,66 @@ const ApplicationsButton = new Lang.Class({
 
 
     _listApplications: function(task_id) {
-	if (task_id) {
-            return this.applicationsByCategory[task_id];
-	} else {
-	    return [];
+      let params = {q: "1"};
+
+      this._rallyManager.load_json_async('http://api.openweathermap.org/data/2.5/weather', params, function(json) {
+        if (json && (Number(json.cod) == 200)) {
+          log("XXX We have made contact with outter space");
+        } else {
+          log("XXX I'm giving it all I got captain!");
         }
+      });
+      if (task_id) {
+        return this.applicationsByCategory[task_id];
+     	} else {
+        return [];
+      }
     },
 
     destroy: function() {
       this.menu.actor.get_children().forEach(function(c) { c.destroy() });
       this.parent();
+    },
+
+    _speak: function() {
     }
+});
+
+
+let _httpSession;
+const RallyManager = new Lang.Class({
+  Name: 'RallyManager',
+
+  _init: function() {
+  },
+
+  load_json_async: function(url, params, fun) {
+    if (_httpSession === undefined) {
+      if (ExtensionUtils.versionCheck(['3.6'], Config.PACKAGE_VERSION)) {
+        _httpSession = new Soup.SessionAsync();
+        Soup.Session.prototype.add_feature.call(_httpSession, new Soup.ProxyResolverDefault());
+      } else
+        _httpSession = new Soup.Session();
+    }
+
+    let message = Soup.form_request_new_from_hash('GET', url, params);
+
+    _httpSession.queue_message(message, Lang.bind(this, function(_httpSession, message) {
+      try {
+        if (!message.response_body.data) {
+          fun.call(this, 0);
+          return;
+        }
+        let jp = JSON.parse(message.response_body.data);
+        fun.call(this, jp);
+      } catch (e) {
+        fun.call(this, 0);
+        return;
+      }
+    }));
+
+    return;
+  }
 });
 
 let tasksMenuButton;
