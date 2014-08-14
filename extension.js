@@ -57,6 +57,16 @@ const Application = new Lang.Class({
 
   execute: function() {
     return this._execute();
+  },
+
+  icon: function() {
+    return this._icon;
+  },
+
+  create_icon_texture: function() {
+    this.icon = new St.Icon({ icon_name: 'system-run',
+                              style_class: 'system-status-icon' });
+    return this.icon;
   }
 });
 
@@ -180,12 +190,12 @@ const ApplicationMenuItem = new Lang.Class({
   },
 
   activate: function(event) {
-	  // XXX Im just opening firefox here, assuming all clicks open a browser, this 
+	  // XXX Im just opening firefox here, assuming all clicks open a browser, this
 	  // needs to be more intelligentio
 	  //
-          this._task.execute()
-          this._button.selectCategory(null, null);
-          this._button.menu.toggle();
+    this._task.execute()
+    this._button.selectCategory(null, null);
+    this._button.menu.toggle();
 	  this.parent(event);
   },
 
@@ -202,7 +212,7 @@ const ApplicationMenuItem = new Lang.Class({
 
   _updateIcon: function() {
     //XXX We cannot have icons as I am simply passing in a string rather than a class at this point
-    //this._iconBin.set_child(this._task.create_icon_texture(APPLICATION_ICON_SIZE));
+    this._iconBin.set_child(this._task.create_icon_texture(APPLICATION_ICON_SIZE));
   }
 });
 
