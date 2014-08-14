@@ -127,8 +127,8 @@ const Task = new Lang.Class({
   }
 });
 
-const ApplicationsMenuItem = new Lang.Class({
-  Name: 'ApplicationsMenuItem',
+const ActivitiesMenuItem = new Lang.Class({
+  Name: 'ActivitiesMenuItem',
   Extends: PopupMenu.PopupBaseMenuItem,
 
   _init: function(button) {
@@ -534,7 +534,7 @@ const ApplicationsButton = new Lang.Class({
                                                      x_fill: true, y_fill: true,
                                                      y_align: St.Align.START });
 
-        let activities = new ApplicationsMenuItem(this);
+        let activities = new ActivitiesMenuItem(this);
         this.leftBox.add(activities.actor, { expand: false,
                                              x_fill: true, y_fill: false,
                                              y_align: St.Align.START });
