@@ -1,9 +1,3 @@
-
-
-/***
- * Stole from the weather extension
- * ***/
-
 const Config = imports.misc.config;
 const Gio = imports.gi.Gio;
 const Mainloop = imports.mainloop;
@@ -127,41 +121,41 @@ const Task = new Lang.Class({
   }
 });
 
-const ActivitiesMenuItem = new Lang.Class({
-  Name: 'ActivitiesMenuItem',
-  Extends: PopupMenu.PopupBaseMenuItem,
-
-  _init: function(button) {
-    this.parent();
-    this._button = button;
-
-    // New task entry box
-    //
-    this.newTask = new St.Entry({
-      name: "newTaskEntry",
-      hint_text: _("New task..."),
-      track_hover: false,
-      can_focus: true
-    });
-    this.actor.add_child(this.newTask);
-  },
-
-  // This should call the add new task function
-  //
-  activate: function(event) {
-    let that = this;
-    let entryNewTask = this.newTask.clutter_text;
-    entryNewTask.set_max_length(MAX_LENGTH);
-    entryNewTask.connect('key-press-event', function(o,e)	{
-      let symbol = e.get_key_symbol();
-      if (symbol == KEY_RETURN || symbol == KEY_ENTER) {
-        let task = new Task(o);
-        that.tasks << task;
-        entryNewTask.set_text('');
-      }
-    });
-  }
-});
+// const RallyItem = new Lang.Class({
+//   Name: 'RallyItem',
+//   Extends: PopupMenu.PopupBaseMenuItem,
+// 
+//   _init: function(button) {
+//     this.parent();
+//     this._button = button;
+// 
+//     // New task entry box
+//     //
+//     // this.newTask = new St.Entry({
+//     //   name: "newTaskEntry",
+//     //   hint_text: _("New task..."),
+//     //   track_hover: false,
+//     //   can_focus: true
+//     // });
+//     // this.actor.add_child(this.newTask);
+//   },
+// 
+//   // This should call the add new task function
+//   //
+//   activate: function(event) {
+//     // let that = this;
+//     // let entryNewTask = this.newTask.clutter_text;
+//     // entryNewTask.set_max_length(MAX_LENGTH);
+//     // entryNewTask.connect('key-press-event', function(o,e)	{
+//     //   let symbol = e.get_key_symbol();
+//     //   if (symbol == KEY_RETURN || symbol == KEY_ENTER) {
+//     //     let task = new Task(o);
+//     //     that.tasks << task;
+//     //     entryNewTask.set_text('');
+//     //   }
+//     // });
+//   }
+// });
 
 const ApplicationMenuItem = new Lang.Class({
   Name: 'ApplicationMenuItem',
@@ -328,8 +322,8 @@ const CategoryMenuItem = new Lang.Class({
     }
 });
 
-const TasksMenu = new Lang.Class({
-  Name: 'TasksMenu',
+const RallyMenu = new Lang.Class({
+  Name: 'RallyMenu',
   Extends: PopupMenu.PopupMenu,
 
   _init: function(sourceActor, arrowAlignment, arrowSide, button) {
@@ -362,272 +356,385 @@ const TasksMenu = new Lang.Class({
   }
 });
 
-const ApplicationsButton = new Lang.Class({
-    Name: 'ApplicationsButton',
-    Extends: PanelMenu.Button,
-    taskMenu: null,
+const RallyMenuButton = new Lang.Class({
+  Name: 'RallyMenuButton',
+  Extends: PanelMenu.Button,
+  taskMenu: null,
 
-    _init: function() {
-        this.parent(1.0, null, false);
-        this._rallyManager = new RallyManager();
+  _init: function() {
+    this.parent(1.0, null, false);
+    this._rallyManager = new RallyManager();
 
-        // this.actor.add_actor(this.buttonText);
-        this.tasksMenu = new TasksMenu(this.actor, 1.0, St.Side.TOP, this)
-        this.setMenu(this.tasksMenu);
-        Main.panel.menuManager.addMenu(this.menu);
+    // this.actor.add_actor(this.buttonText);
+    this.tasksMenu = new RallyMenu(this.actor, 1.0, St.Side.TOP, this)
+    this.setMenu(this.tasksMenu);
+    Main.panel.menuManager.addMenu(this.menu);
 
-        this.actor.accessible_role = Atk.Role.LABEL;
+    this.actor.accessible_role = Atk.Role.LABEL;
 
-        let hbox = new St.BoxLayout({ style_class: 'panel-status-menu-box' });
+    let hbox = new St.BoxLayout({ style_class: 'panel-status-menu-box' });
 
-        this._label = new St.Label({ text: _("Tasks"),
-                                     y_expand: true,
-                                     y_align: Clutter.ActorAlign.CENTER });
-        hbox.add_child(this._label);
-        hbox.add_child(new St.Label({ text: '\u25BE',
-                                      y_expand: true,
-                                      y_align: Clutter.ActorAlign.CENTER }));
+    this._label = new St.Label({ text: _("Rally"),
+                                 y_expand: true,
+                                 y_align: Clutter.ActorAlign.CENTER });
+    hbox.add_child(this._label);
+    hbox.add_child(new St.Label({ text: '\u25BE',
+                                  y_expand: true,
+                                  y_align: Clutter.ActorAlign.CENTER }));
 
-        this.actor.add_actor(hbox);
-        this.actor.name = 'panelTasks';
-        this.actor.label_actor = this._label;
+    this.actor.add_actor(hbox);
+    this.actor.name = 'panelTasks';
+    this.actor.label_actor = this._label;
 
-        this.actor.connect('captured-event', Lang.bind(this, this._onCapturedEvent));
+    this.actor.connect('captured-event', Lang.bind(this, this._onCapturedEvent));
 
-        _showingId = Main.overview.connect('showing', Lang.bind(this, function() {
-            this.actor.add_accessible_state (Atk.StateType.CHECKED);
-        }));
-        _hidingId = Main.overview.connect('hiding', Lang.bind(this, function() {
-            this.actor.remove_accessible_state (Atk.StateType.CHECKED);
-        }));
+    _showingId = Main.overview.connect('showing', Lang.bind(this, function() {
+        this.actor.add_accessible_state (Atk.StateType.CHECKED);
+    }));
 
-        this.reloadFlag = false;
-        this._createLayout();
-        this._display();
+    _hidingId = Main.overview.connect('hiding', Lang.bind(this, function() {
+        this.actor.remove_accessible_state (Atk.StateType.CHECKED);
+    }));
 
-        _installedChangedId = appSys.connect('installed-changed', Lang.bind(this, function() {
-            if (this.menu.isOpen) {
-                this._redisplay();
-                this.mainBox.show();
-            } else {
-                this.reloadFlag = true;
-            }
-        }));
-    },
+    this.reloadFlag = false;
+    this.UI = new UiBuilder(this.menu);
+    this.UI.createLayout();
+    this._display();
 
-    _createVertSeparator: function() {
-        let separator = new St.DrawingArea({ style_class: 'calendar-vertical-separator',
-                                             pseudo_class: 'highlighted' });
-        separator.connect('repaint', Lang.bind(this, this._onVertSepRepaint));
-        return separator;
-    },
-
-    _onCapturedEvent: function(actor, event) {
-        if (event.type() == Clutter.EventType.BUTTON_PRESS) {
-            if (!Main.overview.shouldToggleByCornerOrButton())
-                return true;
-        }
-        return false;
-    },
-
-    _onMenuKeyPress: function(actor, event) {
-        let symbol = event.get_key_symbol();
-        if (symbol == Clutter.KEY_Left || symbol == Clutter.KEY_Right) {
-            let direction = symbol == Clutter.KEY_Left ? Gtk.DirectionType.LEFT
-                                                       : Gtk.DirectionType.RIGHT;
-            if (this.menu.actor.navigate_focus(global.stage.key_focus, direction, false))
-                return true;
-        }
-        return this.parent(actor, event);
-    },
-
-    _onVertSepRepaint: function(area) {
-        let cr = area.get_context();
-        let themeNode = area.get_theme_node();
-        let [width, height] = area.get_surface_size();
-        let stippleColor = themeNode.get_color('-stipple-color');
-        let stippleWidth = themeNode.get_length('-stipple-width');
-        let x = Math.floor(width/2) + 0.5;
-        cr.moveTo(x, 0);
-        cr.lineTo(x, height);
-        Clutter.cairo_set_source_color(cr, stippleColor);
-        cr.setDash([1, 3], 1); // Hard-code for now
-        cr.setLineWidth(stippleWidth);
-        cr.stroke();
-    },
-
-    _onOpenStateChanged: function(menu, open) {
-       if (open) {
-           if (this.reloadFlag) {
-               this._redisplay();
-               this.reloadFlag = false;
-           }
-           this.mainBox.show();
-       }
-       this.parent(menu, open);
-    },
-
-    _redisplay: function() {
-        this.applicationsBox.destroy_all_children();
-        this.categoriesBox.destroy_all_children();
-        this._display();
-    },
-
-    scrollToButton: function(button) {
-        let appsScrollBoxAdj = this.applicationsScrollBox.get_vscroll_bar().get_adjustment();
-        let appsScrollBoxAlloc = this.applicationsScrollBox.get_allocation_box();
-        let currentScrollValue = appsScrollBoxAdj.get_value();
-        let boxHeight = appsScrollBoxAlloc.y2 - appsScrollBoxAlloc.y1;
-        let buttonAlloc = button.actor.get_allocation_box();
-        let newScrollValue = currentScrollValue;
-        if (currentScrollValue > buttonAlloc.y1 - 10)
-            newScrollValue = buttonAlloc.y1 - 10;
-        if (boxHeight + currentScrollValue < buttonAlloc.y2 + 10)
-            newScrollValue = buttonAlloc.y2 - boxHeight + 10;
-        if (newScrollValue != currentScrollValue)
-            appsScrollBoxAdj.set_value(newScrollValue);
-    },
-
-    scrollToCatButton: function(button) {
-        let catsScrollBoxAdj = this.categoriesScrollBox.get_vscroll_bar().get_adjustment();
-        let catsScrollBoxAlloc = this.categoriesScrollBox.get_allocation_box();
-        let currentScrollValue = catsScrollBoxAdj.get_value();
-        let boxHeight = catsScrollBoxAlloc.y2 - catsScrollBoxAlloc.y1;
-        let buttonAlloc = button.actor.get_allocation_box();
-        let newScrollValue = currentScrollValue;
-        if (currentScrollValue > buttonAlloc.y1 - 10)
-            newScrollValue = buttonAlloc.y1 - 10;
-        if (boxHeight + currentScrollValue < buttonAlloc.y2 + 10)
-            newScrollValue = buttonAlloc.y2 - boxHeight + 10;
-        if (newScrollValue != currentScrollValue)
-            catsScrollBoxAdj.set_value(newScrollValue);
-    },
-
-    _createLayout: function() {
-        let section = new PopupMenu.PopupMenuSection();
-        this.menu.addMenuItem(section);
-        this.mainBox = new St.BoxLayout({ vertical: false });
-        this.leftBox = new St.BoxLayout({ vertical: true });
-        this.applicationsScrollBox = new St.ScrollView({ x_fill: true, y_fill: false,
-                                                         y_align: St.Align.START,
-                                                         style_class: 'task-time-tracker-menu vfade' });
-        this.applicationsScrollBox.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC);
-        let vscroll = this.applicationsScrollBox.get_vscroll_bar();
-        vscroll.connect('scroll-start', Lang.bind(this, function() {
-            this.menu.passEvents = true;
-        }));
-        vscroll.connect('scroll-stop', Lang.bind(this, function() {
-            this.menu.passEvents = false;
-        }));
-        this.categoriesScrollBox = new St.ScrollView({ x_fill: true, y_fill: false,
-                                                       y_align: St.Align.START,
-                                                       style_class: 'vfade' });
-        this.categoriesScrollBox.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC);
-        vscroll = this.categoriesScrollBox.get_vscroll_bar();
-        vscroll.connect('scroll-start', Lang.bind(this, function() {
-                              this.menu.passEvents = true;
-                          }));
-        vscroll.connect('scroll-stop', Lang.bind(this, function() {
-            this.menu.passEvents = false;
-        }));
-        this.leftBox.add(this.categoriesScrollBox, { expand: true,
-                                                     x_fill: true, y_fill: true,
-                                                     y_align: St.Align.START });
-
-        let activities = new ActivitiesMenuItem(this);
-        this.leftBox.add(activities.actor, { expand: false,
-                                             x_fill: true, y_fill: false,
-                                             y_align: St.Align.START });
-
-        this.applicationsBox = new St.BoxLayout({ vertical: true });
-        this.applicationsScrollBox.add_actor(this.applicationsBox);
-        this.categoriesBox = new St.BoxLayout({ vertical: true });
-        this.categoriesScrollBox.add_actor(this.categoriesBox, { expand: true, x_fill: false });
-
-        this.mainBox.add(this.leftBox);
-        this.mainBox.add(this._createVertSeparator(), { expand: false, x_fill: false, y_fill: true});
-        this.mainBox.add(this.applicationsScrollBox, { expand: true, x_fill: true, y_fill: true });
-        section.actor.add_actor(this.mainBox);
-    },
-
-    _display: function() {
-        this._applicationsButtons = new Array();
-        this.mainBox.style=('width: 640px;');
-        this.mainBox.hide();
-
-        // Load Rally tasks
-        this.applicationsByCategory = {};
-        let nextTask;
-        while ((nextTask = rallyTasks.shift()) !== undefined) {
-          let task = new Task(nextTask);
-	  this.applicationsByCategory[task.get_object_id()] = task.get_applications();
-          let categoryMenuItem = new CategoryMenuItem(this, task);
-          this.categoriesBox.add_actor(categoryMenuItem.actor);
-        }
-
-        //Load applications
-        this._displayButtons(this._listApplications(null));
-
-        let height = this.categoriesBox.height + MENU_HEIGHT_OFFSET + 'px';
-        this.mainBox.style+=('height: ' + height);
-    },
-
-    _clearApplicationsBox: function(selectedActor) {
-        let actors = this.applicationsBox.get_children();
-        for (let i = 0; i < actors.length; i++) {
-            let actor = actors[i];
-            this.applicationsBox.remove_actor(actor);
-        }
-    },
-
-    selectCategory: function(categoryMenuItem) {
-	if (categoryMenuItem)
-            this._displayButtons(this._listApplications(categoryMenuItem.get_object_id()));
-	else
-	    this._clearApplicationsBox(null);
-    },
-
-    _displayButtons: function(apps) {
-      if (apps) {
-        for (let i = 0; i < apps.length; i++) {
-          let app = apps[i];
-          if (!this._applicationsButtons[app]) {
-            let applicationMenuItem = new ApplicationMenuItem(this, app);
-            this._applicationsButtons[app] = applicationMenuItem;
-          }
-          if (!this._applicationsButtons[app].actor.get_parent())
-            this.applicationsBox.add_actor(this._applicationsButtons[app].actor);
-        }
+    _installedChangedId = appSys.connect('installed-changed', Lang.bind(this, function() {
+      if (this.menu.isOpen) {
+        this._redisplay();
+        this.UI.mainBox().show();
+      } else {
+        this.reloadFlag = true;
       }
-    },
+    }));
+  },
 
-
-    _listApplications: function(task_id) {
-      let params = {q: "1"};
-
-      this._rallyManager.load_json_async('http://api.openweathermap.org/data/2.5/weather', params, function(json) {
-        if (json && (Number(json.cod) == 200)) {
-          log("XXX We have made contact with outter space");
-        } else {
-          log("XXX I'm giving it all I got captain!");
-        }
-      });
-      if (task_id) {
-        return this.applicationsByCategory[task_id];
-     	} else {
-        return [];
-      }
-    },
-
-    destroy: function() {
-      this.menu.actor.get_children().forEach(function(c) { c.destroy() });
-      this.parent();
-    },
-
-    _speak: function() {
+  _onCapturedEvent: function(actor, event) {
+    if (event.type() == Clutter.EventType.BUTTON_PRESS) {
+      if (!Main.overview.shouldToggleByCornerOrButton())
+        return true;
     }
+
+    return false;
+  },
+
+  _onMenuKeyPress: function(actor, event) {
+    let symbol = event.get_key_symbol();
+    if (symbol == Clutter.KEY_Left || symbol == Clutter.KEY_Right) {
+      let direction = symbol == Clutter.KEY_Left ? Gtk.DirectionType.LEFT
+                                                 : Gtk.DirectionType.RIGHT;
+      if (this.menu.actor.navigate_focus(global.stage.key_focus, direction, false))
+        return true;
+    }
+
+    return this.parent(actor, event);
+  },
+
+  _onOpenStateChanged: function(menu, open) {
+    if (open) {
+      if (this.reloadFlag) {
+        this._redisplay();
+        this.reloadFlag = false;
+      }
+      this.UI.mainBox().show();
+    }
+    this.parent(menu, open);
+  },
+
+  _redisplay: function() {
+    this.rallyItemDetailsBox.destroy_all_children();
+    this.UI.rallyItemsBox().destroy_all_children();
+    this._display();
+  },
+
+  scrollToButton: function(button) {
+    let appsScrollBoxAdj = this.rightScrollBox.get_vscroll_bar().get_adjustment();
+    let appsScrollBoxAlloc = this.rightScrollBox.get_allocation_box();
+    let currentScrollValue = appsScrollBoxAdj.get_value();
+    let boxHeight = appsScrollBoxAlloc.y2 - appsScrollBoxAlloc.y1;
+    let buttonAlloc = button.actor.get_allocation_box();
+    let newScrollValue = currentScrollValue;
+
+    if (currentScrollValue > buttonAlloc.y1 - 10)
+      newScrollValue = buttonAlloc.y1 - 10;
+    if (boxHeight + currentScrollValue < buttonAlloc.y2 + 10)
+      newScrollValue = buttonAlloc.y2 - boxHeight + 10;
+    if (newScrollValue != currentScrollValue)
+      appsScrollBoxAdj.set_value(newScrollValue);
+  },
+
+  scrollToCatButton: function(button) {
+    let catsScrollBoxAdj = this.leftScrollBox.get_vscroll_bar().get_adjustment();
+    let catsScrollBoxAlloc = this.leftScrollBox.get_allocation_box();
+    let currentScrollValue = catsScrollBoxAdj.get_value();
+    let boxHeight = catsScrollBoxAlloc.y2 - catsScrollBoxAlloc.y1;
+    let buttonAlloc = button.actor.get_allocation_box();
+    let newScrollValue = currentScrollValue;
+
+    if (currentScrollValue > buttonAlloc.y1 - 10)
+      newScrollValue = buttonAlloc.y1 - 10;
+    if (boxHeight + currentScrollValue < buttonAlloc.y2 + 10)
+      newScrollValue = buttonAlloc.y2 - boxHeight + 10;
+    if (newScrollValue != currentScrollValue)
+      catsScrollBoxAdj.set_value(newScrollValue);
+  },
+
+  _display: function() {
+    this._applicationsButtons = new Array();
+    this.UI.mainBox().style=('width: 640px;');
+    this.UI.mainBox().hide();
+
+    // Load Rally tasks
+    this.applicationsByCategory = {};
+    let nextTask;
+    while ((nextTask = rallyTasks.shift()) !== undefined) {
+      let task = new Task(nextTask);
+      this.applicationsByCategory[task.get_object_id()] = task.get_applications();
+      let categoryMenuItem = new CategoryMenuItem(this, task);
+      this.UI.rallyItemsBox().add_actor(categoryMenuItem.actor);
+    }
+
+    //Load applications
+    this._displayButtons(this._listApplications(null));
+
+    let height = this.UI.rallyItemsBox().height + MENU_HEIGHT_OFFSET + 'px';
+    this.UI.mainBox().style+=('height: ' + height);
+  },
+
+  _clearApplicationsBox: function(selectedActor) {
+    let actors = this.rallyItemDetailsBox.get_children();
+    for (let i = 0; i < actors.length; i++) {
+      let actor = actors[i];
+      this.rallyItemDetailsBox.remove_actor(actor);
+    }
+  },
+
+  selectCategory: function(categoryMenuItem) {
+    if (categoryMenuItem)
+      this._displayButtons(this._listApplications(categoryMenuItem.get_object_id()));
+    else
+      this._clearApplicationsBox(null);
+  },
+
+  _displayButtons: function(apps) {
+    if (apps) {
+      for (let i = 0; i < apps.length; i++) {
+        let app = apps[i];
+        if (!this._applicationsButtons[app]) {
+          let applicationMenuItem = new ApplicationMenuItem(this, app);
+          this._applicationsButtons[app] = applicationMenuItem;
+        }
+        if (!this._applicationsButtons[app].actor.get_parent())
+          this.rallyItemDetailsBox.add_actor(this._applicationsButtons[app].actor);
+      }
+    }
+  },
+
+  _listApplications: function(task_id) {
+    let params = {q: "1"};
+
+    this._rallyManager.load_json_async('http://api.openweathermap.org/data/2.5/weather', params, function(json) {
+      if (json && (Number(json.cod) == 200)) {
+        log("XXX We have made contact with outter space");
+      } else {
+        log("XXX I'm giving it all I got captain!");
+      }
+    });
+
+    if (task_id)
+      return this.applicationsByCategory[task_id];
+    else
+      return [];
+  },
+
+  destroy: function() {
+    this.menu.actor.get_children().forEach(function(c) { c.destroy() });
+    this.parent();
+  },
+
+  _speak: function() {
+  }
 });
 
+
+const UiBuilder = new Lang.Class({
+  Name: 'UiBuilder',
+
+  _init: function(menu) {
+    this.UI = {};
+    this.UI.current = new St.Bin({style_class: 'current'});
+    this.menu = menu;
+  },
+
+  mainBox: function() {
+    return this.UI.mainBox;
+  },
+
+  rallyItemsBox: function() {
+    log("XXXX",this.UI.rallyItemsBox);
+    return this.UI.rallyItemsBox;
+  },
+
+  createLayout: function() {
+    let section = new PopupMenu.PopupMenuSection();
+    this.menu.addMenuItem(section);
+
+    // boxes
+    //
+    this.UI.mainBox = new St.BoxLayout({ 
+      vertical: false
+    });
+
+    this.leftBox = new St.BoxLayout({ 
+      vertical: true 
+    });
+
+    this.rightBox = new St.BoxLayout({ 
+      vertical: true 
+    });
+
+    //*** scrollers
+
+    // left scroll box
+    //
+    this.leftScrollBox = new St.ScrollView({ 
+      x_fill: true, 
+      y_fill: false,
+      y_align: St.Align.START,
+      style_class: 'vfade' 
+    });
+    this.leftScrollBox.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC);
+
+    let left_vscroll = this.leftScrollBox.get_vscroll_bar();
+
+    left_vscroll.connect('scroll-start', Lang.bind(this, function() {
+      this.menu.passEvents = true;
+    }));
+
+    left_vscroll.connect('scroll-stop', Lang.bind(this, function() {
+      this.menu.passEvents = false;
+    }));
+
+    this.leftBox.add(this.leftScrollBox, { 
+      expand: true,
+      x_fill: true, 
+      y_fill: true,
+      y_align: St.Align.START 
+    });
+
+    this.UI.rallyItemsBox = new St.BoxLayout({ vertical: true });
+    this.leftScrollBox.add_actor(this.UI.rallyItemsBox, { expand: true, x_fill: false });
+
+    // right scroll box
+    //
+    this.rightScrollBox = new St.ScrollView({ 
+      x_fill: true,
+      y_fill: false,
+      y_align: St.Align.START,
+      style_class: 'task-time-tracker-menu vfade' 
+    });
+    this.rightScrollBox.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC);
+
+    let right_vscroll = this.rightScrollBox.get_vscroll_bar();
+
+    right_vscroll.connect('scroll-start', Lang.bind(this, function() {
+      this.menu.passEvents = true;
+    }));
+
+    right_vscroll.connect('scroll-stop', Lang.bind(this, function() {
+      this.menu.passEvents = false;
+    }));
+
+    this.rightBox.add(this.rightScrollBox, { 
+      expand: true,
+      x_fill: true, 
+      y_fill: true,
+      y_align: St.Align.START 
+    });
+
+    this.rallyItemDetailsBox = new St.BoxLayout({ vertical: true });
+    this.rightScrollBox.add_actor(this.rallyItemDetailsBox);
+
+    let rally_item_details = this._buildRallyItemDetails();
+    this.rallyItemDetailsBox.add_actor(rally_item_details);
+
+    this.UI.mainBox.add(this.leftBox);
+    this.UI.mainBox.add(this._createVertSeparator(), { expand: false, x_fill: false, y_fill: true});
+    this.UI.mainBox.add(this.rightBox);
+    section.actor.add_actor(this.UI.mainBox);
+  },
+
+  _createVertSeparator: function() {
+    let separator = new St.DrawingArea({ style_class: 'calendar-vertical-separator',
+                                         pseudo_class: 'highlighted' });
+    separator.connect('repaint', Lang.bind(this, this._onVertSepRepaint));
+
+    return separator;
+  },
+
+  _onVertSepRepaint: function(area) {
+    let cr = area.get_context();
+    let themeNode = area.get_theme_node();
+    let [width, height] = area.get_surface_size();
+    let stippleColor = themeNode.get_color('-stipple-color');
+    let stippleWidth = themeNode.get_length('-stipple-width');
+    let x = Math.floor(width/2) + 0.5;
+    cr.moveTo(x, 0);
+    cr.lineTo(x, height);
+    Clutter.cairo_set_source_color(cr, stippleColor);
+    cr.setDash([1, 3], 1); // Hard-code for now
+    cr.setLineWidth(stippleWidth);
+    cr.stroke();
+  },
+
+  _buildRallyItemDetails: function() {
+    this.UI.currentTemperature = new St.Label({ text: '-' });
+    this.UI.currentVisibility  = new St.Label({ text: '-' });
+    this.UI.currentHumidity    = new St.Label({ text: '-' });
+    this.UI.currentPressure    = new St.Label({ text: '-' });
+    this.UI.currentWind        = new St.Label({ text: '-' });
+    
+    let rb = new St.BoxLayout({
+      style_class: 'item-current-databox'
+    });
+
+    let rb_captions = new St.BoxLayout({
+      vertical: true,
+      style_class: 'item-current-databox-captions'
+    });
+    rb.add_actor(rb_captions);
+
+    let rb_values = new St.BoxLayout({
+      vertical: true,
+      style_class: 'item-current-databox-values'
+    });
+    rb.add_actor(rb_values);
+    
+    rb_captions.add_actor(new St.Label({text: 'Feels like'}));
+    rb_values.add_actor(this.UI.currentTemperature);
+    rb_captions.add_actor(new St.Label({text: 'Visibility'}));
+    rb_values.add_actor(this.UI.currentVisibility);
+    rb_captions.add_actor(new St.Label({text: 'Humidity'}));
+    rb_values.add_actor(this.UI.currentHumidity);
+    rb_captions.add_actor(new St.Label({text: 'Pressure'}));
+    rb_values.add_actor(this.UI.currentPressure);
+    rb_captions.add_actor(new St.Label({text: 'Wind'}));
+    rb_values.add_actor(this.UI.currentWind);
+    
+    let xb = new St.BoxLayout();
+    xb.add_actor(rb);
+    
+    let box = new St.BoxLayout({
+      style_class: 'task-current-iconbox'
+    });
+
+    box.add_actor(xb);
+
+    return box;
+  },
+});
 
 let _httpSession;
 const RallyManager = new Lang.Class({
@@ -671,6 +778,19 @@ let _hidingId;
 let _installedChangedId;
 let _showingId;
 let _tasks;
+let rallyItems = [
+  {
+    "Defect":
+    {
+      "id": "DE0001",
+      "title": "Some defect title",
+      "description": "Some defect desription",
+      "itteration": "i52",
+      "blocked": true
+    }
+  }
+];
+
 let rallyTasks = [
   { "Defect":
     {
@@ -715,7 +835,7 @@ let rallyTasks = [
 function enable() {
   tasksButton = Main.panel.statusArea['activities'];
   tasksButton.container.hide();
-  tasksMenuButton = new ApplicationsButton();
+  tasksMenuButton = new RallyMenuButton();
   Main.panel.addToStatusArea('task-time-tracker', tasksMenuButton, 1, 'right');
 
   Main.wm.setCustomKeybindingHandler('panel-main-menu',
